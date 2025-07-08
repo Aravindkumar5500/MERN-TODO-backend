@@ -16,15 +16,15 @@ app.use(['/update/:id','/delete/:id'],auth)
 
 async function connectDB(){
     try{
-        const connection = await mongoose.connect('mongodb+srv://aravindad557574:Ff4HpNcVwUSxqWRh@merntodolist.f2y94.mongodb.net/',{
+        const connection = await mongoose.connect('mongodb+srv://aravindad557574:wj0VJ4ull21l7ise@merntodolist.f2y94.mongodb.net/?retryWrites=true&w=majority&appName=MERNTODOlist',{
             useNewUrlParser:true,
             useUnifiedTopology:true
         })
         console.log(connection.connection.host)
 
     } catch(error){
-        console.log(error.message)
-        next(error)
+        console.log(error)
+        //  next(error)
 
     }
 }
@@ -43,10 +43,10 @@ try {
 }
 })
 
-app.get('/todo',async(req,res,next)=>{
+app.get('/todo',async(_req,res,next)=>{
     try{
         let data = await todo.find()
-        res.send({massage:"list show",status:200,data:data})
+        res.send({message:"list show",status:200,data:data})
 
     } catch(error){
       console.log(error)
@@ -83,41 +83,62 @@ app.post('/register',async(req,res,next)=>{
         
        
         if(data){
-            res.send({message:"Already Account exist for this email",status:201})
+            res.send({message:"Already Account exist for this email",status:201,data:data})
             return;
         }else{
            
             let regdata = new user (req.body)
-            let data = await regdata.save()
-            let token = jwt.sign({id:data._id},SECRET,{expiresIn:"5m"})
+            let savedData = await regdata.save()
+            let token = jwt.sign({id:savedData._id},SECRET,{expiresIn:"5m"})
 
-            res.send({message:"Registered Successfully",status:200,token:token,data:data})
+            res.send({message:"Registered Successfully",status:200,token:token,data:savedData})
         }
     } catch (error) {
          next(error)
     }
 })
 
-app.post('/login',async(req,res,next)=>{
-    try{
-        let {email,password} = req.body
-        let data    = await user.findOne(email,password) 
+// app.post('/login',async(req,res,next)=>{
+//     try{
+//         let {email,password} = req.body
+//         let data = await user.findOne(email,password) 
       
-        if(data){
-            if(data.email == email && data.password == password){
-                let token = jwt.sign({id:data._id},SECRET,{expiresIn:"5m"})
-                res.send({message:"Login Success",status:200,token:token})
-            }else{
-                res.send({message:"Invalid Password",status:400})
+//         if(data){
+//             if(data.email == email && data.password == password){
+//                 let token = jwt.sign({id:data._id},SECRET,{expiresIn:"5m"})
+//                 res.send({message:"Login Success",status:200,token:token})
+//             }else{
+//                 res.send({message:"Invalid Password",status:400})
+//             }
+//         }else{
+//             res.send({message:"Account not found",status:404})
+//         }
+//     } catch (error) {
+//         next(error)
+//     }
+//     }
+// )
+app.post('/login', async (req, res, next) => {
+    try {
+        let { email, password } = req.body;
+        // Correct usage: pass an object as the query
+        let data = await user.findOne({ email: email });
+
+        if (data) {
+            // If passwords are hashed, use bcrypt.compare here
+            if (data.password === password) {
+                let token = jwt.sign({ id: data._id }, SECRET, { expiresIn: "5m" });
+                res.send({ message: "Login Success", status: 200, token: token });
+            } else {
+                res.send({ message: "Invalid Password", status: 400 });
             }
-        }else{
-            res.send({message:"Account not found",status:404})
+        } else {
+            res.send({ message: "Account not found", status: 404 });
         }
     } catch (error) {
-        next(error)
+        next(error);
     }
-    }
-)
+});
 
 function auth(req,res,next){
     try {
@@ -135,7 +156,7 @@ function auth(req,res,next){
         next(error)
     }
 }
-app.get("/signup",async(req,res,next)=>{
+app.get("/signup",async(_req,res,next)=>{
     try {
        
         res.send({message:"You Have Access",status:200})
@@ -144,8 +165,10 @@ app.get("/signup",async(req,res,next)=>{
     }
 }
 )
-app.use((error,req,res,next)=>{
-    res.send({status:error??500,error:error.message??"server error"})
-
-})
+app.use((error, _req, res, _next) => {
+    res.status(500).send({
+        status: 500,
+        error: error?.message ?? "server error"
+    });
+});
 app.listen(3001,()=>console.log("Server 3001 is running"))
