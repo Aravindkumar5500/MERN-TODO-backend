@@ -10,13 +10,16 @@ const app = express()
 
 app.use(cors())
 app.use(express.json())
-const SECRET = "Secret456"
+const SECRET = process.env.JWT_SECRET
 
 app.use(['/update/:id','/delete/:id'],auth)
 
 async function connectDB(){
     try{
-        const connection = await mongoose.connect('mongodb+srv://aravindad557574:wj0VJ4ull21l7ise@merntodolist.f2y94.mongodb.net/?retryWrites=true&w=majority&appName=MERNTODOlist',{
+        if (!process.env.MONGODB_URI || !SECRET) {
+            throw new Error("MONGODB_URI and JWT_SECRET must be set in the environment");
+        }
+        const connection = await mongoose.connect(process.env.MONGODB_URI,{
             useNewUrlParser:true,
             useUnifiedTopology:true
         })
